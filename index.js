@@ -1,6 +1,6 @@
 const express = require('express');
 require('dotenv').config()
-const { MongoClient, ServerApiVersion, ObjectId} = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 5000;
@@ -35,6 +35,8 @@ async function run() {
         // Database and Collection 
         const jobsCollections = client.db('jobs').collection('all_jobs');
         const appliedJobsCollections = client.db('jobs').collection('applied_jobs');
+
+
         // Get the all Of jobs 
         app.get('/all_jobs', async (req, res) => {
             const cursor = jobsCollections.find();
@@ -47,34 +49,65 @@ async function run() {
             const result = await jobsCollections.insertOne(newJobs)
             res.send(result);
         });
+        // Update data api
+        app.patch('/all_jobs/:id', async (req, res) => {
+            const id = req.params.id;
+            const data = req.body;
+            const query = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    jobTitle: data.jobTitle,
+                    formatStartDate: data.formatStartDate,
+                    formatEndDate: data.formatEndDate,
+                    salary: data.salary,
+                    imageUrl: data.photoURL,
+
+
+                }
+            };
+            const result = await jobsCollections.updateOne(query, updateDoc);
+            res.send(result);
+        });
+        // Delete data 
+        app.delete('/all_Jobs/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await jobsCollections.deleteOne(query);
+            res.send(result);
+          });
         // Get job by Id 
         app.get('/all_jobs/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await jobsCollections.findOne(query);
             res.send(result);
-          });
+        });
         //   $inc implement here 
-          app.put('/all_jobs/:id', async (req, res) => {
+        app.put('/all_jobs/:id', async (req, res) => {
             const id = req.params.id;
             const number = req.body;
             const query = { _id: new ObjectId(id) };
             const updateDoc = {
-              $inc: { applicantsNumber: 1 },
+                $inc: { applicantsNumber: 1 },
             };
             const options = { new: true };
             const result = await jobsCollections.findOneAndUpdate(query, updateDoc, options);
             res.send(result);
-          });
-      
+        });
+
 
         //   Get the all applied job collection 
-          app.get('/applied_job', async (req, res) => {
+        app.get('/applied_job', async (req, res) => {
             const cursor = appliedJobsCollections.find();
             const result = await cursor.toArray();
             res.send(result);
         });
-        
+        // Post all the applied job here 
+        app.post('/applied_job', async (req, res) => {
+            const newApplied = req.body;
+            const result = await appliedJobsCollections.insertOne(newApplied)
+            res.send(result);
+        });
 
 
 
