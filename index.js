@@ -1,6 +1,6 @@
 const express = require('express');
 require('dotenv').config()
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId} = require('mongodb');
 const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 5000;
@@ -32,21 +32,49 @@ async function run() {
         // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
 
-
+        // Database and Collection 
         const jobsCollections = client.db('jobs').collection('all_jobs');
-
+        const appliedJobsCollections = client.db('jobs').collection('applied_jobs');
+        // Get the all Of jobs 
         app.get('/all_jobs', async (req, res) => {
             const cursor = jobsCollections.find();
             const result = await cursor.toArray();
             res.send(result);
         });
-
+        // Post a new Jobs 
         app.post('/all_jobs', async (req, res) => {
-            const newProduct = req.body;
-            console.log(newProduct);
-            const result = await jobsCollections.insertOne(newProduct)
+            const newJobs = req.body;
+            const result = await jobsCollections.insertOne(newJobs)
             res.send(result);
         });
+        // Get job by Id 
+        app.get('/all_jobs/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await jobsCollections.findOne(query);
+            res.send(result);
+          });
+        //   $inc implement here 
+          app.put('/all_jobs/:id', async (req, res) => {
+            const id = req.params.id;
+            const number = req.body;
+            const query = { _id: new ObjectId(id) };
+            const updateDoc = {
+              $inc: { applicantsNumber: 1 },
+            };
+            const options = { new: true };
+            const result = await jobsCollections.findOneAndUpdate(query, updateDoc, options);
+            res.send(result);
+          });
+      
+
+        //   Get the all applied job collection 
+          app.get('/applied_job', async (req, res) => {
+            const cursor = appliedJobsCollections.find();
+            const result = await cursor.toArray();
+            res.send(result);
+        });
+        
 
 
 
