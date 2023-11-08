@@ -2,6 +2,8 @@ const express = require('express');
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+var cookieParser = require('cookie-parser')
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -12,9 +14,39 @@ app.use(cors({
     origin: ['http://localhost:5173', 'http://localhost:5000'],
     credentials: true,
 }));
+app.use(cookieParser());
+
+// Middle Ware api
 
 
-console.log(process.env.USER_DB);
+const verifyToken = (req, res, next) => {
+    const token = req?.cookies?.token;
+    if (!token) {
+        return res.status(401).send({ message: 'Unauthorized access' })
+    } else {
+        jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
+            if (err) {
+                return res.status(err).send({ message: 'Unauthorized access' });
+            } else {
+                req.user = decoded;
+                next();
+            }
+        });
+
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
 
 const uri = `mongodb+srv://${process.env.USER_DB}:${process.env.USER_PASS}@cluster0.044ysfk.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -37,6 +69,27 @@ async function run() {
         const appliedJobsCollections = client.db('jobs').collection('applied_jobs');
 
 
+        // Authentication related api 
+        app.post('/jwt', async (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '2h' })
+
+            res
+                .cookie('token', token, {
+                    httpOnly: true,
+                    secure: true,
+                    sameSite: 'none'
+                })
+                .send({ success: true });
+        })
+
+        app.post('/logout', async (req, res) => {
+            const user = req.body;
+            res
+                .clearCookie('token', { maxAge: 0 })
+                .send({ success: true });
+        })
+        // Service Apis 
         // Get the all Of jobs 
         app.get('/all_jobs', async (req, res) => {
             const cursor = jobsCollections.find();
@@ -50,7 +103,7 @@ async function run() {
             res.send(result);
         });
         // Update data api
-        app.patch('/all_jobs/:id', async (req, res) => {
+        app.patch('/all_jobs/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const data = req.body;
             const query = { _id: new ObjectId(id) };
@@ -69,12 +122,12 @@ async function run() {
             res.send(result);
         });
         // Delete data 
-        app.delete('/all_Jobs/:id', async (req, res) => {
+        app.delete('/all_Jobs/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await jobsCollections.deleteOne(query);
             res.send(result);
-          });
+        });
         // Get job by Id 
         app.get('/all_jobs/:id', async (req, res) => {
             const id = req.params.id;
@@ -83,7 +136,7 @@ async function run() {
             res.send(result);
         });
         //   $inc implement here 
-        app.put('/all_jobs/:id', async (req, res) => {
+        app.put('/all_jobs/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const number = req.body;
             const query = { _id: new ObjectId(id) };
@@ -97,13 +150,14 @@ async function run() {
 
 
         //   Get the all applied job collection 
-        app.get('/applied_job', async (req, res) => {
+        app.get('/applied_job', verifyToken, async (req, res) => {
+
             const cursor = appliedJobsCollections.find();
             const result = await cursor.toArray();
             res.send(result);
         });
         // Post all the applied job here 
-        app.post('/applied_job', async (req, res) => {
+        app.post('/applied_job', verifyToken, async (req, res) => {
             const newApplied = req.body;
             const result = await appliedJobsCollections.insertOne(newApplied)
             res.send(result);
