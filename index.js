@@ -19,7 +19,22 @@ app.use(cookieParser());
 // Middle Ware api
 
 
+const verifyToken = (req, res, next) => {
+    const token = req?.cookies?.token;
+    if (!token) {
+        return res.status(401).send({ message: 'Unauthorized access' })
+    } else {
+        jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
+            if (err) {
+                return res.status(err).send({ message: 'Unauthorized access' });
+            } else {
+                req.user = decoded;
+                next();
+            }
+        });
 
+    }
+};
 
 
 
