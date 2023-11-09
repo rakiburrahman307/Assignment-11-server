@@ -11,7 +11,7 @@ const port = process.env.PORT || 5000;
 // Middle Ware
 app.use(express.json());
 app.use(cors({
-    origin: ['http://localhost:5173', 'https://654bc8786091fc21f3a62152--curious-starburst-d1ee83.netlify.app'],
+    origin: ['http://localhost:5173', 'https://654cb6a7320bb405568374cd--curious-starburst-d1ee83.netlify.app'],
     credentials: true,
 }));
 
@@ -87,7 +87,7 @@ async function run() {
         })
         // Service Apis 
         // Get the all Of jobs 
-        app.get('/all_jobs', verifyToken, async (req, res) => {
+        app.get('/all_jobs',async (req, res) => {
             const cursor = jobsCollections.find();
             const result = await cursor.toArray();
             res.send(result);
@@ -110,7 +110,7 @@ async function run() {
 
         });
         // Post a new Jobs 
-        app.post('/all_jobs', async (req, res) => {
+        app.post('/all_jobs',verifyToken, async (req, res) => {
             const newJobs = req.body;
             const result = await jobsCollections.insertOne(newJobs)
             res.send(result);
