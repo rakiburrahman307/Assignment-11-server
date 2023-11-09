@@ -11,10 +11,16 @@ const port = process.env.PORT || 5000;
 // Middle Ware
 app.use(express.json());
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:5000'],
+    origin: ['http://localhost:5173', 'https://654bc8786091fc21f3a62152--curious-starburst-d1ee83.netlify.app'],
     credentials: true,
 }));
+
 app.use(cookieParser());
+app.use((req, res, next) => {
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    next();
+});
+
 
 // Middle Ware api
 
@@ -35,16 +41,6 @@ const verifyToken = (req, res, next) => {
 
     }
 };
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -91,10 +87,27 @@ async function run() {
         })
         // Service Apis 
         // Get the all Of jobs 
-        app.get('/all_jobs', async (req, res) => {
+        app.get('/all_jobs', verifyToken, async (req, res) => {
             const cursor = jobsCollections.find();
             const result = await cursor.toArray();
             res.send(result);
+        });
+        // using jwt to secure 1 api
+        // Get the my Jobs  and Secure the api 
+        app.get('/my_jobs', verifyToken, async (req, res) => {
+            if (req?.query?.email !== req?.user?.email) {
+                return res.status(403).send({ message: 'Forbidden access' });
+
+            } else {
+                let query = {};
+                if (req.query?.email) {
+                    query = { jobPost: req?.query?.email }
+                }
+                const cursor = jobsCollections.find(query);
+                const result = await cursor.toArray();
+                res.send(result);
+            }
+
         });
         // Post a new Jobs 
         app.post('/all_jobs', async (req, res) => {
@@ -136,9 +149,8 @@ async function run() {
             res.send(result);
         });
         //   $inc implement here 
-        app.put('/all_jobs/:id', verifyToken, async (req, res) => {
+        app.put('/update_count/:id', async (req, res) => {
             const id = req.params.id;
-            const number = req.body;
             const query = { _id: new ObjectId(id) };
             const updateDoc = {
                 $inc: { applicantsNumber: 1 },
@@ -148,13 +160,22 @@ async function run() {
             res.send(result);
         });
 
-
-        //   Get the all applied job collection 
+        // using jwt to secure 2 api
+        //   Get the all applied job collection Ans Secure api
         app.get('/applied_job', verifyToken, async (req, res) => {
+            if (req?.query?.email !== req?.user?.email) {
+                return res.status(403).send({ message: 'Forbidden access' });
 
-            const cursor = appliedJobsCollections.find();
-            const result = await cursor.toArray();
-            res.send(result);
+            } else {
+                let query = {};
+                if (req.query?.email) {
+                    query = { applyUserEmail: req?.query?.email }
+                }
+                const cursor = appliedJobsCollections.find(query);
+                const result = await cursor.toArray();
+                res.send(result);
+            }
+
         });
         // Post all the applied job here 
         app.post('/applied_job', verifyToken, async (req, res) => {
