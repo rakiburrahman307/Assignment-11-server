@@ -11,7 +11,7 @@ const port = process.env.PORT || 5000;
 // Middle Ware
 app.use(express.json());
 app.use(cors({
-    origin: ['http://localhost:5173', 'https://654cb6a7320bb405568374cd--curious-starburst-d1ee83.netlify.app'],
+    origin: ['http://localhost:5173', 'https://curious-starburst-d1ee83.netlify.app'],
     credentials: true,
 }));
 
